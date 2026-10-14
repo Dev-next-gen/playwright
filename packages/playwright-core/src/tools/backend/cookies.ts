@@ -43,8 +43,11 @@ const cookieList = defineTool({
         return cookieDomain === domain || cookieDomain.endsWith('.' + domain);
       });
     }
-    if (params.path)
-      cookies = cookies.filter(c => c.path.startsWith(params.path!));
+    if (params.path) {
+      const path = params.path;
+      const prefix = path.endsWith('/') ? path : path + '/';
+      cookies = cookies.filter(c => c.path === path || c.path.startsWith(prefix));
+    }
 
     if (cookies.length === 0)
       response.addTextResult('No cookies found');

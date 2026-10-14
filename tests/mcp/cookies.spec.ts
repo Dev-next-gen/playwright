@@ -177,6 +177,38 @@ test('browser_cookie_list filters by domain', async ({ startClient, server }) =>
   });
 });
 
+test('browser_cookie_list filters by path', async ({ startClient, server }) => {
+  const { client } = await startClient({
+    config: { capabilities: ['storage'] },
+  });
+
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.EMPTY_PAGE },
+  });
+
+  // The path matches itself and its subpaths, not other paths that start with it.
+  for (const [name, path] of [['exact', '/api'], ['nested', '/api/v1'], ['other', '/apikeys']]) {
+    await client.callTool({
+      name: 'browser_cookie_set',
+      arguments: { name, value: 'value', path },
+    });
+  }
+  const result = await client.callTool({
+    name: 'browser_cookie_list',
+    arguments: { path: '/api' },
+  });
+  expect(result).toHaveResponse({
+    result: expect.stringContaining('exact=value'),
+  });
+  expect(result).toHaveResponse({
+    result: expect.stringContaining('nested=value'),
+  });
+  expect(result).toHaveResponse({
+    result: expect.not.stringContaining('other=value'),
+  });
+});
+
 test('browser_cookie_get returns not found for missing cookie', async ({ startClient, server }) => {
   const { client } = await startClient({
     config: { capabilities: ['storage'] },
